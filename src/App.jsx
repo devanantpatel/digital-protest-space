@@ -1,80 +1,83 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls, Html, Sky, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 
-// City environment backdrops (Buildings / Road)
-function UrbanEnvironment() {
+// 1. Realistic Road & Plaza Floor
+function Ground() {
   return (
     <group>
-      {/* City Road left side */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-35, 0.01, 0]}>
-        <planeGeometry args={[15, 80]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.7} />
+      {/* Main Plaza Pavement */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial color="#b0b5bc" roughness={0.7} />
       </mesh>
-      {/* Decorative High rises left & back */}
-      <mesh position={[-45, 12, 0]}>
-        <boxGeometry args={[5, 24, 70]} />
-        <meshStandardMaterial color="#4a5568" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 15, -45]}>
-        <boxGeometry args={[80, 30, 8]} />
-        <meshStandardMaterial color="#718096" roughness={0.9} />
-      </mesh>
+      {/* Grid pattern illusion for street tiles */}
+      <gridHelper args={[100, 50, '#718096', '#cbd5e1']} position={[0, 0.01, 0]} />
     </group>
   );
 }
 
-function LargeStage({ videoId }) {
+// 2. Realistic Stage Structure & Lighting Rig
+function RallyStage({ videoId }) {
   return (
-    <group position={[18, 0, -5]}>
-      {/* Platform */}
-      <mesh position={[0, 1.25, 0]}>
-        <boxGeometry args={[16, 2.5, 10]} />
-        <meshStandardMaterial color="#111" roughness={0.8} />
+    <group position={[14, 0, -4]}>
+      {/* Wooden / Concrete Stage Base */}
+      <mesh position={[0, 1.2, 0]}>
+        <boxGeometry args={[16, 2.4, 9]} />
+        <meshStandardMaterial color="#2d3748" roughness={0.6} />
       </mesh>
-      {/* Stage scaffold side towers */}
-      <mesh position={[-7.5, 5.5, 4.5]}>
-        <cylinderGeometry args={[0.15, 0.15, 11]} />
-        <meshStandardMaterial color="#718096" metalness={0.7} roughness={0.3} />
+
+      {/* Metal Truss Towers */}
+      <mesh position={[-7.5, 6, 4]}>
+        <cylinderGeometry args={[0.15, 0.15, 12]} />
+        <meshStandardMaterial color="#cbd5e0" metalness={0.8} roughness={0.2} />
       </mesh>
-      <mesh position={[7.5, 5.5, 4.5]}>
-        <cylinderGeometry args={[0.15, 0.15, 11]} />
-        <meshStandardMaterial color="#718096" metalness={0.7} roughness={0.3} />
+      <mesh position={[7.5, 6, 4]}>
+        <cylinderGeometry args={[0.15, 0.15, 12]} />
+        <meshStandardMaterial color="#cbd5e0" metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Overhead banner truss support */}
-      <mesh position={[0, 10.5, 4.5]}>
-        <boxGeometry args={[16, 0.8, 0.4]} />
-        <meshStandardMaterial color="#1a202c" />
+      <mesh position={[0, 11.5, 4]}>
+        <boxGeometry args={[15.5, 0.3, 0.3]} />
+        <meshStandardMaterial color="#cbd5e0" metalness={0.8} roughness={0.2} />
       </mesh>
-      
-      {/* Stage Front banners (Bilingual Text in standard style) */}
-      <Html position={[0, 10.51, 4.8]} center distanceFactor={18}>
+
+      {/* Main Top Slogan Banner */}
+      <Html position={[0, 11.6, 4.2]} center distanceFactor={14}>
         <div style={{
-          background: '#000', color: '#fff', padding: '5px 25px', 
-          border: '2px solid #fff', borderRadius: '4px', textAlign: 'center',
-          fontFamily: 'sans-serif', whiteSpace: 'nowrap'
+          background: '#0f172a',
+          color: '#ffffff',
+          padding: '8px 24px',
+          border: '2px solid #ef4444',
+          borderRadius: '6px',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          fontFamily: 'sans-serif'
         }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>न्याय के लिए हम एक हैं!</h2>
-          <span style={{ fontSize: '12px' }}>लोकतंत्र बचाओ • विरोध प्रदर्शन</span>
+          <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', letterSpacing: '1px' }}>
+            न्याय के लिए हम एक हैं!
+          </h2>
+          <span style={{ fontSize: '13px', color: '#f87171', fontWeight: 'bold' }}>
+            लोकतंत्र बचाओ • विरोध प्रदर्शन मंच
+          </span>
         </div>
       </Html>
 
-      {/* Main Broadcast Screen Backdrop (Right visual block) */}
-      <group position={[0, 6, 0.5]}>
+      {/* Big Screen Display */}
+      <group position={[0, 6.2, 0.2]}>
         <mesh>
-          <boxGeometry args={[14.5, 8.2, 0.4]} />
-          <meshStandardMaterial color="#080808" />
+          <boxGeometry args={[14.2, 8.2, 0.3]} />
+          <meshStandardMaterial color="#000000" />
         </mesh>
-        
-        {/* Dynamic Youtube IFrame embed Screen */}
-        <Html transform occlude position={[0, 0, 0.22]} distanceFactor={6.2}>
-          <div style={{ width: '800px', height: '450px', background: '#000', display: 'flex', flexDirection: 'column' }}>
+
+        <Html transform occlude position={[0, 0, 0.18]} distanceFactor={6.2}>
+          <div style={{ width: '800px', height: '460px', background: '#000' }}>
             <iframe
               width="100%"
               height="100%"
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
-              title="Protest Livestream Feed"
+              title="Broadcast"
               frameBorder="0"
               allow="autoplay; encrypted-media"
               allowFullScreen
@@ -86,55 +89,76 @@ function LargeStage({ videoId }) {
   );
 }
 
-// 2D Crowd with placard holding and Flag textures (optimized instanced sprites)
-function DenseCrowd({ count = 500 }) {
-  const meshRef = useRef();
+// 3. Realistic Crowd using Colored Billboard Cutouts with Flags
+function HumanCrowd({ count = 350 }) {
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const meshRef = useRef();
 
-  const crowdData = useMemo(() => {
-    const data = [];
+  // Distinct rally colors (White kurta, saffron, green, blue shirts)
+  const clothesColors = ['#f8fafc', '#ea580c', '#16a34a', '#2563eb', '#dc2626', '#475569'];
+
+  const people = useMemo(() => {
+    const list = [];
     for (let i = 0; i < count; i++) {
-      // Crowd scatters around the stage plaza
-      const x = (Math.random() - 0.5) * 38;
-      const z = 8 + Math.random() * 25; // in front of camera & right side plaza
-      const speed = 1.0 + Math.random() * 2;
+      const x = (Math.random() - 0.5) * 32;
+      const z = 4 + Math.random() * 22;
+      const height = 1.6 + Math.random() * 0.3;
+      const speed = 2 + Math.random() * 3;
       const offset = Math.random() * Math.PI * 2;
-      // random placard scale
-      const sizeY = 1.4 + Math.random() * 0.4;
-      data.push({ x, z, speed, offset, sizeY });
+      const color = clothesColors[Math.floor(Math.random() * clothesColors.length)];
+      list.push({ x, z, height, speed, offset, color });
     }
-    return data;
+    return list;
   }, [count]);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    crowdData.forEach((person, i) => {
-      // jump and hand wavings simulated oscillation 
-      const y = Math.max(0, Math.sin(t * person.speed + person.offset) * 0.18);
-      dummy.position.set(person.x, (person.sizeY/2) + y, person.z);
-      dummy.lookAt(18, 4, -5); // everyone looks at Stage
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  });
-
   return (
-    <instancedMesh ref={meshRef} args={[null, null, count]}>
-      <capsuleGeometry args={[0.25, 1.3, 4, 8]} />
-      {/* High-contrast human and protester look color variety */}
-      <meshStandardMaterial color="#2d3748" roughness={0.8} />
-    </instancedMesh>
+    <group>
+      {people.map((p, idx) => (
+        <group key={idx} position={[p.x, p.height / 2, p.z]}>
+          {/* Billboard face camera automatically */}
+          <Billboard follow={true}>
+            {/* Torso/Body */}
+            <mesh position={[0, 0, 0]}>
+              <planeGeometry args={[0.65, p.height]} />
+              <meshStandardMaterial color={p.color} roughness={0.5} />
+            </mesh>
+            {/* Head */}
+            <mesh position={[0, p.height * 0.55, 0]}>
+              <circleGeometry args={[0.2, 16]} />
+              <meshStandardMaterial color="#fcd34d" />
+            </mesh>
+            {/* Placard / Signboards for some users */}
+            {idx % 4 === 0 && (
+              <mesh position={[0.3, p.height * 0.7, 0]}>
+                <planeGeometry args={[0.7, 0.45]} />
+                <meshStandardMaterial color="#ffffff" />
+              </mesh>
+            )}
+          </group>
+        </group>
+      ))}
+    </group>
   );
 }
 
-// Floor Ground tiles
-function PlazaGround() {
+// 4. Background Cityscape / Buildings
+function CityBackdrop() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-      <planeGeometry args={[100, 100]} />
-      <meshStandardMaterial color="#4a5568" roughness={0.9} />
-    </mesh>
+    <group position={[-25, 0, -25]}>
+      {/* Building blocks */}
+      <mesh position={[0, 15, 0]}>
+        <boxGeometry args={[14, 30, 14]} />
+        <meshStandardMaterial color="#64748b" roughness={0.8} />
+      </mesh>
+      <mesh position={[18, 18, -10]}>
+        <boxGeometry args={[16, 36, 12]} />
+        <meshStandardMaterial color="#94a3b8" roughness={0.9} />
+      </mesh>
+      <mesh position={[-18, 12, 10]}>
+        <boxGeometry args={[14, 24, 15]} />
+        <meshStandardMaterial color="#475569" roughness={0.9} />
+      </mesh>
+    </group>
   );
 }
 
@@ -142,65 +166,64 @@ export default function App() {
   const [videoId, setVideoId] = useState('dQw4w9WgXcQ');
   const [inputUrl, setInputUrl] = useState('');
 
-  const handleUpdateStream = (e) => {
+  const handleUpdate = (e) => {
     e.preventDefault();
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = inputUrl.match(regExp);
     if (match && match[2].length === 11) {
       setVideoId(match[2]);
       setInputUrl('');
-    } else {
-      alert('Invalid URL');
     }
   };
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      
-      {/* Dynamic admin interface */}
+      {/* Top Floating Control Bar */}
       <div style={{
-        position: 'absolute', top: 15, left: 15, zIndex: 10,
-        background: 'rgba(26,32,44, 0.9)', border: '1px solid #4a5568',
-        backdropFilter: 'blur(10px)', padding: '12px 16px', borderRadius: '8px',
-        color: '#fff', fontFamily: 'sans-serif', maxWidth: '300px'
+        position: 'absolute', top: 12, left: 12, zIndex: 10,
+        background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
+        padding: '10px 14px', borderRadius: '8px', color: '#fff',
+        fontFamily: 'sans-serif', maxWidth: '320px', border: '1px solid #334155'
       }}>
-        <h3 style={{ margin: '0 0 5px 0', fontSize: '15px' }}>✊ Digital Protest Area</h3>
-        <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#cbd5e0' }}>
-          Real urban square environment with high intensity dynamic rally.
-        </p>
-
-        <form onSubmit={handleUpdateStream} style={{ display: 'flex', gap: '5px' }}>
+        <h4 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>✊ Digital Rally HQ</h4>
+        <form onSubmit={handleUpdate} style={{ display: 'flex', gap: '6px' }}>
           <input
-            type="text" value={inputUrl}
+            type="text"
+            placeholder="Paste YouTube Live Link"
+            value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="Change YouTube Broadcast URL"
             style={{
-              flex: 1, padding: '5px 8px', fontSize: '12px',
-              borderRadius: '4px', border: '1px solid #4a5568',
-              background: '#2d3748', color: '#fff'
+              flex: 1, padding: '6px 8px', fontSize: '12px',
+              borderRadius: '4px', border: '1px solid #475569',
+              background: '#1e293b', color: '#fff'
             }}
           />
           <button type="submit" style={{
-            background: '#e53e3e', color: '#fff', border: 'none',
-            padding: '5px 10px', fontSize: '11px', borderRadius: '4px', fontWeight: 'bold'
-          }}>Update</button>
+            background: '#ef4444', color: '#fff', border: 'none',
+            borderRadius: '4px', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold'
+          }}>
+            Live
+          </button>
         </form>
       </div>
 
-      <Canvas camera={{ position: [0, 8, 25], fov: 60 }}>
-        <ambientLight intensity={0.65} />
-        <directionalLight position={[20, 30, 20]} intensity={1.4} castShadow />
-        <pointLight position={[18, 12, -2]} intensity={2.5} />
+      <Canvas camera={{ position: [0, 6, 22], fov: 60 }}>
+        {/* Realistic Sky with Sun position */}
+        <Sky sunPosition={[100, 30, 100]} turbidity={8} rayleigh={3} />
         
-        <UrbanEnvironment />
-        <PlazaGround />
-        <LargeStage videoId={videoId} />
-        <DenseCrowd count={480} />
-        
+        {/* Sunlight & Lighting */}
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[50, 80, 50]} intensity={2.2} castShadow />
+
+        <CityBackdrop />
+        <Ground />
+        <RallyStage videoId={videoId} />
+        <HumanCrowd count={350} />
+
         <OrbitControls
           maxPolarAngle={Math.PI / 2 - 0.05}
-          minDistance={5}
-          maxDistance={45}
+          minDistance={4}
+          maxDistance={40}
         />
       </Canvas>
     </div>
