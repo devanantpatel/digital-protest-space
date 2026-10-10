@@ -3,83 +3,116 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 
-// 1. Zameen (Protest Ground)
-function ProtestGround() {
+// City environment backdrops (Buildings / Road)
+function UrbanEnvironment() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-      <planeGeometry args={[70, 70]} />
-      <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
-    </mesh>
-  );
-}
-
-// 2. Main Live Screen
-function MainScreen({ videoId, notice }) {
-  return (
-    <group position={[0, 5, -14]}>
-      {/* Screen Frame & Stand */}
-      <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[16.5, 9.5, 0.4]} />
-        <meshStandardMaterial color="#080808" />
+    <group>
+      {/* City Road left side */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-35, 0.01, 0]}>
+        <planeGeometry args={[15, 80]} />
+        <meshStandardMaterial color="#2d3748" roughness={0.7} />
       </mesh>
-      <mesh position={[-6, -4, 0]}>
-        <cylinderGeometry args={[0.2, 0.2, 8]} />
-        <meshStandardMaterial color="#333" />
+      {/* Decorative High rises left & back */}
+      <mesh position={[-45, 12, 0]}>
+        <boxGeometry args={[5, 24, 70]} />
+        <meshStandardMaterial color="#4a5568" roughness={0.9} />
       </mesh>
-      <mesh position={[6, -4, 0]}>
-        <cylinderGeometry args={[0.2, 0.2, 8]} />
-        <meshStandardMaterial color="#333" />
+      <mesh position={[0, 15, -45]}>
+        <boxGeometry args={[80, 30, 8]} />
+        <meshStandardMaterial color="#718096" roughness={0.9} />
       </mesh>
-
-      {/* Screen Display */}
-      <Html transform occlude position={[0, 0, 0.22]} distanceFactor={7.5}>
-        <div style={{ width: '800px', height: '450px', background: '#000', display: 'flex', flexDirection: 'column' }}>
-          {notice && (
-            <div style={{ background: '#d32f2f', color: '#fff', padding: '6px 12px', fontSize: '18px', fontWeight: 'bold' }}>
-              📢 ANNOUNCEMENT: {notice}
-            </div>
-          )}
-          <iframe
-            width="100%"
-            height="100%"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
-            title="Protest Stream"
-            frameBorder="0"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
-      </Html>
     </group>
   );
 }
 
-// 3. Optimized 3D Crowd (InstancedMesh - No Lag)
-function ProtestCrowd({ count = 250 }) {
+function LargeStage({ videoId }) {
+  return (
+    <group position={[18, 0, -5]}>
+      {/* Platform */}
+      <mesh position={[0, 1.25, 0]}>
+        <boxGeometry args={[16, 2.5, 10]} />
+        <meshStandardMaterial color="#111" roughness={0.8} />
+      </mesh>
+      {/* Stage scaffold side towers */}
+      <mesh position={[-7.5, 5.5, 4.5]}>
+        <cylinderGeometry args={[0.15, 0.15, 11]} />
+        <meshStandardMaterial color="#718096" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <mesh position={[7.5, 5.5, 4.5]}>
+        <cylinderGeometry args={[0.15, 0.15, 11]} />
+        <meshStandardMaterial color="#718096" metalness={0.7} roughness={0.3} />
+      </mesh>
+      {/* Overhead banner truss support */}
+      <mesh position={[0, 10.5, 4.5]}>
+        <boxGeometry args={[16, 0.8, 0.4]} />
+        <meshStandardMaterial color="#1a202c" />
+      </mesh>
+      
+      {/* Stage Front banners (Bilingual Text in standard style) */}
+      <Html position={[0, 10.51, 4.8]} center distanceFactor={18}>
+        <div style={{
+          background: '#000', color: '#fff', padding: '5px 25px', 
+          border: '2px solid #fff', borderRadius: '4px', textAlign: 'center',
+          fontFamily: 'sans-serif', whiteSpace: 'nowrap'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '900' }}>न्याय के लिए हम एक हैं!</h2>
+          <span style={{ fontSize: '12px' }}>लोकतंत्र बचाओ • विरोध प्रदर्शन</span>
+        </div>
+      </Html>
+
+      {/* Main Broadcast Screen Backdrop (Right visual block) */}
+      <group position={[0, 6, 0.5]}>
+        <mesh>
+          <boxGeometry args={[14.5, 8.2, 0.4]} />
+          <meshStandardMaterial color="#080808" />
+        </mesh>
+        
+        {/* Dynamic Youtube IFrame embed Screen */}
+        <Html transform occlude position={[0, 0, 0.22]} distanceFactor={6.2}>
+          <div style={{ width: '800px', height: '450px', background: '#000', display: 'flex', flexDirection: 'column' }}>
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
+              title="Protest Livestream Feed"
+              frameBorder="0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          </div>
+        </Html>
+      </group>
+    </group>
+  );
+}
+
+// 2D Crowd with placard holding and Flag textures (optimized instanced sprites)
+function DenseCrowd({ count = 500 }) {
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // Har bande ki position screen ke aage scatter hogi
   const crowdData = useMemo(() => {
     const data = [];
     for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 28;
-      const z = -2 - Math.random() * 18; // screen ke samne
-      const speed = 1.5 + Math.random() * 2;
+      // Crowd scatters around the stage plaza
+      const x = (Math.random() - 0.5) * 38;
+      const z = 8 + Math.random() * 25; // in front of camera & right side plaza
+      const speed = 1.0 + Math.random() * 2;
       const offset = Math.random() * Math.PI * 2;
-      data.push({ x, z, speed, offset });
+      // random placard scale
+      const sizeY = 1.4 + Math.random() * 0.4;
+      data.push({ x, z, speed, offset, sizeY });
     }
     return data;
   }, [count]);
 
-  // Chant / Naare lagane jaisa subtle jumping motion
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     crowdData.forEach((person, i) => {
-      const y = Math.max(0, Math.sin(t * person.speed + person.offset) * 0.15);
-      dummy.position.set(person.x, 1 + y, person.z);
-      // Avatars hamesha thoda screen ki taraf face karenge
-      dummy.lookAt(0, 4, -14);
+      // jump and hand wavings simulated oscillation 
+      const y = Math.max(0, Math.sin(t * person.speed + person.offset) * 0.18);
+      dummy.position.set(person.x, (person.sizeY/2) + y, person.z);
+      dummy.lookAt(18, 4, -5); // everyone looks at Stage
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
     });
@@ -88,19 +121,27 @@ function ProtestCrowd({ count = 250 }) {
 
   return (
     <instancedMesh ref={meshRef} args={[null, null, count]}>
-      {/* Capsule shape body jo door se realistic low-poly character lage */}
-      <capsuleGeometry args={[0.3, 1.2, 4, 8]} />
-      <meshStandardMaterial color="#4a5568" roughness={0.7} />
+      <capsuleGeometry args={[0.25, 1.3, 4, 8]} />
+      {/* High-contrast human and protester look color variety */}
+      <meshStandardMaterial color="#2d3748" roughness={0.8} />
     </instancedMesh>
+  );
+}
+
+// Floor Ground tiles
+function PlazaGround() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+      <planeGeometry args={[100, 100]} />
+      <meshStandardMaterial color="#4a5568" roughness={0.9} />
+    </mesh>
   );
 }
 
 export default function App() {
   const [videoId, setVideoId] = useState('dQw4w9WgXcQ');
-  const [notice, setNotice] = useState('Welcome to the Digital Protest Space!');
   const [inputUrl, setInputUrl] = useState('');
 
-  // YouTube URL se direct Video ID nikalne ka logic
   const handleUpdateStream = (e) => {
     e.preventDefault();
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -109,82 +150,57 @@ export default function App() {
       setVideoId(match[2]);
       setInputUrl('');
     } else {
-      alert('Invalid YouTube URL');
+      alert('Invalid URL');
     }
   };
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       
-      {/* Floating Admin & Control Bar */}
+      {/* Dynamic admin interface */}
       <div style={{
-        position: 'absolute',
-        top: 15,
-        left: 15,
-        zIndex: 10,
-        background: 'rgba(15, 15, 15, 0.85)',
-        backdropFilter: 'blur(8px)',
-        padding: '12px 16px',
-        borderRadius: '10px',
-        color: '#fff',
-        fontFamily: 'system-ui, sans-serif',
-        maxWidth: '320px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+        position: 'absolute', top: 15, left: 15, zIndex: 10,
+        background: 'rgba(26,32,44, 0.9)', border: '1px solid #4a5568',
+        backdropFilter: 'blur(10px)', padding: '12px 16px', borderRadius: '8px',
+        color: '#fff', fontFamily: 'sans-serif', maxWidth: '300px'
       }}>
-        <h3 style={{ margin: '0 0 6px 0', fontSize: '15px' }}>✊ Digital Protest HQ</h3>
-        <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#999' }}>
-          Drag to rotate view | 250+ Protesters in ground
+        <h3 style={{ margin: '0 0 5px 0', fontSize: '15px' }}>✊ Digital Protest Area</h3>
+        <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#cbd5e0' }}>
+          Real urban square environment with high intensity dynamic rally.
         </p>
 
-        {/* Quick Stream Changer (Admin prototype) */}
-        <form onSubmit={handleUpdateStream} style={{ display: 'flex', gap: '6px' }}>
+        <form onSubmit={handleUpdateStream} style={{ display: 'flex', gap: '5px' }}>
           <input
-            type="text"
-            placeholder="Paste YouTube Live Link"
-            value={inputUrl}
+            type="text" value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
+            placeholder="Change YouTube Broadcast URL"
             style={{
-              flex: 1,
-              padding: '6px 8px',
-              fontSize: '12px',
-              borderRadius: '4px',
-              border: '1px solid #444',
-              background: '#222',
-              color: '#fff'
+              flex: 1, padding: '5px 8px', fontSize: '12px',
+              borderRadius: '4px', border: '1px solid #4a5568',
+              background: '#2d3748', color: '#fff'
             }}
           />
-          <button
-            type="submit"
-            style={{
-              padding: '6px 10px',
-              fontSize: '12px',
-              background: '#e53e3e',
-              border: 'none',
-              borderRadius: '4px',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            Live
-          </button>
+          <button type="submit" style={{
+            background: '#e53e3e', color: '#fff', border: 'none',
+            padding: '5px 10px', fontSize: '11px', borderRadius: '4px', fontWeight: 'bold'
+          }}>Update</button>
         </form>
       </div>
 
-      {/* 3D Scene */}
-      <Canvas camera={{ position: [0, 4, 8], fov: 65 }}>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[10, 20, 10]} intensity={1.5} />
-        <pointLight position={[0, 6, -10]} intensity={2} color="#ffffff" />
+      <Canvas camera={{ position: [0, 8, 25], fov: 60 }}>
+        <ambientLight intensity={0.65} />
+        <directionalLight position={[20, 30, 20]} intensity={1.4} castShadow />
+        <pointLight position={[18, 12, -2]} intensity={2.5} />
         
-        <ProtestGround />
-        <MainScreen videoId={videoId} notice={notice} />
-        <ProtestCrowd count={250} />
+        <UrbanEnvironment />
+        <PlazaGround />
+        <LargeStage videoId={videoId} />
+        <DenseCrowd count={480} />
         
         <OrbitControls
-          maxPolarAngle={Math.PI / 2 - 0.02}
-          minDistance={3}
-          maxDistance={25}
+          maxPolarAngle={Math.PI / 2 - 0.05}
+          minDistance={5}
+          maxDistance={45}
         />
       </Canvas>
     </div>
